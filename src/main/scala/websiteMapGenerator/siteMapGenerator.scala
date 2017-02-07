@@ -20,6 +20,10 @@ object siteMapGenerator {
       val fAndThenG = replaceHrefinString _ andThen endsWithSlash _ 
       val cleandUpUrl: String = fAndThenG(urls)
 
+      "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
+        println("images = " + urls.replace("<img src=\"", ""))
+      }) //This regex needs cleaning, it's spitting out too much junk at the moment.  
+
       if (!listofVistedUrl.contains(cleandUpUrl) && cleandUpUrl.contains(domain)) {
         println("Found internal URL " + cleandUpUrl)
         listofVistedUrl.add(cleandUpUrl)
