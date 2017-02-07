@@ -21,10 +21,11 @@ object siteMapGenerator {
       val cleandUpUrl: String = fAndThenG(urls)
 
       if (!listofVistedUrl.contains(cleandUpUrl) && cleandUpUrl.contains(domain)) {
-        println("Found unique URL " + cleandUpUrl)
+        println("Found internal URL " + cleandUpUrl)
         listofVistedUrl.add(cleandUpUrl)
         findLink(downloadHtml(cleandUpUrl), domain)
-      }
+      }else
+        println("Found external Links " + cleandUpUrl)
     })
   }
 
