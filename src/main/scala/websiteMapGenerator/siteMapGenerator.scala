@@ -1,54 +1,65 @@
 package websiteMapGenerator
 
 import scala.util.Try
-import scala.collection.mutable.Set
+import scala.collection.mutable.HashMap
 
-object siteMapGenerator {
-  var listofVistedUrlinDomain = Set[String]() //List of sites visited already, so the crawler doesn't get into a infinite loop
-  var listofVistedExternalDomain = Set[String]()
+object siteMapGenerator  {
+var domain = ""
+var visted : HashMap[String, Website] = HashMap()
 
   def main(args : Array[String]) : Unit = {
     if (args.length == 0)
       println ("No arguments \n try siteMapGenerator http://www.programcreek.com/")
     else if(!args(0).isEmpty){
       println("Generating Site map for " + args(0))
-      findLink(downloadHtml(args(0)), domain = args(0).split("//")(1).split("/")(0))
+      domain =  args(0).split("//")(1).split("/")(0)
+      organiser(new Website(), args(0))
     }
   }
 
-  def findLink(html : String, domain : String) :Unit = {
-    //Prints out a list of images found
-    "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
+  def organiser(websiteInstance : Website, url : String) :Unit ={
+    val fAndThenG = replaceHrefinString _ andThen replaceIfendsWithSlash _
+    websiteInstance.url = fAndThenG(url)
+
+    if(!visted.contains(websiteInstance.url)) {
+      if (websiteInstance.url.contains(domain)) {
+        println("internal site found " + websiteInstance.url)
+        websiteInstance.internal = true
+        websiteInstance.visited = true
+        downloadHtml(websiteInstance)
+        visted += (websiteInstance.url -> websiteInstance)
+        findLink(websiteInstance)
+      }
+      else {
+        websiteInstance.external = true
+        websiteInstance.visited = true
+        println("external site found " + websiteInstance.url)
+        visted += (websiteInstance.url -> websiteInstance)
+      }
+    }
+  }
+
+
+  def findLink(websiteInstance : Website) :Unit = {
+    "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
       println("images = " + urls.replace("<img src=\"", ""))
     }) //This regex needs cleaning, it's spitting out too much junk at the moment.
-    
-    """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).foreach({ urls =>
-      val fAndThenG = replaceHrefinString _ andThen endsWithSlash _
-      val cleandUpUrl: String = fAndThenG(urls)
 
-      //Prints out a list of external and internal urls
-      if (!listofVistedUrlinDomain.contains(cleandUpUrl) && cleandUpUrl.contains(domain)) {
-        println("Found internal URL " + cleandUpUrl)
-        listofVistedUrlinDomain.add(cleandUpUrl)
-        findLink(downloadHtml(cleandUpUrl), domain)
-      }else if(!listofVistedExternalDomain.contains(cleandUpUrl) && !cleandUpUrl.contains(domain)) {
-        listofVistedExternalDomain.add(cleandUpUrl)
-        println("Found external Links " + cleandUpUrl)
-      }
+    """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
+        organiser(new Website(), urls)
     })
   }
 
-  //Might be worth doing a HOF here, taking in a pattern function and returning a string, this will then accommodate both href and img cleaning
-  def replaceHrefinString(text: String): String ={
-    "href=".r.replaceFirstIn(text, "").replace("\"", "")
+  def replaceHrefinString(url : String) :String ={
+    "href=".r.replaceFirstIn(url, "").replace("\"", "")
   }
 
-  def endsWithSlash(url : String): String ={
+  def replaceIfendsWithSlash(url : String) :String = {
     if (url.endsWith("/")) url.dropRight(1)
     else url
   }
 
-  def downloadHtml(url : String): String = {
-    Try(scala.io.Source.fromURL(url).mkString) getOrElse({System.out.println("Cannot reach page " + url); ""})
+  def downloadHtml(websiteInstance : Website) :Unit = {
+    websiteInstance.hTML = Try(scala.io.Source.fromURL(websiteInstance.url).mkString) getOrElse({System.out.println("Cannot reach page " + websiteInstance.url); ""})
   }
 }
