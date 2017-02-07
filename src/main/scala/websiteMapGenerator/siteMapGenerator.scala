@@ -4,7 +4,8 @@ import scala.util.Try
 import scala.collection.mutable.Set
 
 object siteMapGenerator {
-  var listofVistedUrl = Set[String]() //List of sites visited already, so the crawler doesn't get into a infinite loop
+  var listofVistedUrlinDomain = Set[String]() //List of sites visited already, so the crawler doesn't get into a infinite loop
+  var listofVistedExternalDomain = Set[String]()
 
   def main(args : Array[String]) : Unit = {
     if (args.length == 0)
@@ -17,22 +18,27 @@ object siteMapGenerator {
 
   def findLink(html : String, domain : String) :Unit = {
     """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).foreach({ urls =>
-      val fAndThenG = replaceHrefinString _ andThen endsWithSlash _ 
+      val fAndThenG = replaceHrefinString _ andThen endsWithSlash _
       val cleandUpUrl: String = fAndThenG(urls)
 
+      //Prints out a list of images found
       "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
         println("images = " + urls.replace("<img src=\"", ""))
-      }) //This regex needs cleaning, it's spitting out too much junk at the moment.  
+      }) //This regex needs cleaning, it's spitting out too much junk at the moment.
 
-      if (!listofVistedUrl.contains(cleandUpUrl) && cleandUpUrl.contains(domain)) {
+      //Prints out a list of external and internal urls
+      if (!listofVistedUrlinDomain.contains(cleandUpUrl) && cleandUpUrl.contains(domain)) {
         println("Found internal URL " + cleandUpUrl)
-        listofVistedUrl.add(cleandUpUrl)
+        listofVistedUrlinDomain.add(cleandUpUrl)
         findLink(downloadHtml(cleandUpUrl), domain)
-      }else
+      }else if(!listofVistedExternalDomain.contains(cleandUpUrl) && !cleandUpUrl.contains(domain)) {
+        listofVistedExternalDomain.add(cleandUpUrl)
         println("Found external Links " + cleandUpUrl)
+      }
     })
   }
 
+  //Might be worth doing a HOF here, taking in a pattern function and returning a string, this will then accommodate both href and img cleaning
   def replaceHrefinString(text: String): String ={
     "href=".r.replaceFirstIn(text, "").replace("\"", "")
   }
