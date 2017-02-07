@@ -17,14 +17,14 @@ object siteMapGenerator {
   }
 
   def findLink(html : String, domain : String) :Unit = {
+    //Prints out a list of images found
+    "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
+      println("images = " + urls.replace("<img src=\"", ""))
+    }) //This regex needs cleaning, it's spitting out too much junk at the moment.
+    
     """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).foreach({ urls =>
       val fAndThenG = replaceHrefinString _ andThen endsWithSlash _
       val cleandUpUrl: String = fAndThenG(urls)
-
-      //Prints out a list of images found
-      "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
-        println("images = " + urls.replace("<img src=\"", ""))
-      }) //This regex needs cleaning, it's spitting out too much junk at the moment.
 
       //Prints out a list of external and internal urls
       if (!listofVistedUrlinDomain.contains(cleandUpUrl) && cleandUpUrl.contains(domain)) {
