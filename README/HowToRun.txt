@@ -1,0 +1,10 @@
+Assumes you're in a windows env. 
+
+No test of any kind if checked in as part of this, just the bare application. 
+Code uses a regex to find href's, if the site uses javascript to generate links then it won't work. 
+
+TO RUN => Within the workspace, 
+	1:) gradlew jar
+	2:) java -jar websiteMapGenerator.jar http://www.bbc.co.uk
+
+See screenshot.jpg for a screenshot of it compiling and working. 

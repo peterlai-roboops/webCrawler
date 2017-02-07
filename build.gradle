@@ -1,0 +1,37 @@
+apply plugin: 'gradle-one-jar'
+apply plugin: 'scala'
+
+repositories{
+	mavenCentral()
+}
+
+buildscript { //For the plugins
+    repositories {
+		mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.rholder:gradle-one-jar:1.0.4'
+    }
+}
+
+tasks.withType(Jar) { 
+    destinationDir = file(".")
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'websiteMapGenerator.siteMapGenerator'
+        )
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+    
+dependencies {
+    compile ( 
+            [group: 'org.scala-lang', name: 'scala-library', version: '2.11.8'], 
+            [group: 'org.scala-lang', name: 'scala-compiler', version: '2.11.8']
+    )
+}
+
