@@ -6,7 +6,6 @@ package websiteMapGenerator
 case class Website(
                     url: String = "",
                     hTML: Option[String ],
-                    external: Boolean,
-                    internal: Boolean,
+                    isinternal: Boolean,
                     visited: Boolean
                   )

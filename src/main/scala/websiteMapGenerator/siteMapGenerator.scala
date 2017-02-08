@@ -5,64 +5,52 @@ import scala.util.Try
 
 
 object siteMapGenerator {
-  var visited : mutable.HashMap[String, Website] = mutable.HashMap()
-  var domain = ""
+
   def main(args: Array[String]): Unit = {
     if (args.length == 0)
       println("No arguments \n try siteMapGenerator http://www.programcreek.com/")
     else if (!args(0).isEmpty) {
       println("Generating Site map for " + args(0))
-      domain = args(0).split("//")(1).split("/")(0)
-      organiser(formatUrl(args(0)), domain)
+
+      val websites = organiser(
+        url = formatUrl(args(0)),
+        domain = args(0).split("//")(1).split("/")(0),
+        siteVisited = mutable.HashMap.empty
+      )
+//      println("length = " + websites.size)
+
 //      val websites: Stream[String] = organiser(formatUrl(args(0)), domain)
 //      websites.foreach(s => if (s.internal) println(s"internal site found ${s.url}") else println(s"external site found ${s.url}"))
     }
   }
 
-  def organiser(url: String, domain: String, acc: Stream[Website] = Stream.empty) = {
-    if(!visited.contains(url)) {
+  def organiser(url: String, domain: String, siteVisited: mutable.HashMap[String, Website]) : Unit = {
+    if(!siteVisited.contains(url)) {
       val site: Website = {
         if (url.contains(domain)) {
-          println("internal site found " + url)
           val html = downloadHtml(url)
-          Website(url, Some(html), external = false, internal = true, visited = true)
+          Website(url, Some(html), isinternal = true, visited = true)
         }
         else {
           println("external site found " + url)
-          Website(url, None, external = true, internal = false, visited = true)
+          Website(url, None, isinternal = false, visited = true)
         }
       }
 
-      visited += (site.url -> site)
-      findLink(site)
+      if (site.isinternal && !siteVisited.contains(site.url)) { //Need this here as html might be empty, and thus a guard on the for will be too late as findLink2(site.hTML.get)
+        println("internal site found " + url)
+        for {
+          nextUrl <- findLink2(site.hTML.get)
+        } organiser(formatUrl(nextUrl), domain, siteVisited += site.url -> site)
+      }
     }
-//    val allSites = for {
-//      nextUrl <- findLink(site).map(formatUrl).toStream
-//      if !visited.contains(nextUrl)
-//        nextSite <- findLink(site)
-//    }yield{
-//      visited += (nextUrl -> site)
-//      nextSite
-//    }
-
-//    val allSites = for {
-//      nextUrl <- findLink(site).map(formatUrl).toStream
-//      if !(visited :+ url).contains(nextUrl)
-//      nextSite <- organiser(nextUrl, domain, acc :+ site, visited :+ url)
-//    } yield {
-//      nextSite
-//    }
-//    allSites.distinct
   }
 
-  def findLink(websiteInstance: Website): Unit = {
-    "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
+  def findLink2(html: String): List[String] = {
+    "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
       println("images = " + urls.replace("<img src=\"", ""))
     })
-
-    """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
-      organiser(formatUrl(urls), domain)
-    })
+    """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).toList
   }
 
   def formatUrl = replaceHrefinString _ andThen replaceIfendsWithSlash
@@ -85,3 +73,14 @@ object siteMapGenerator {
     }
   }
 }
+
+/*
+def findLink(websiteInstance: Website): Unit = {
+  "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
+  println("images = " + urls.replace("<img src=\"", ""))
+})
+
+  """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
+  organiser(formatUrl(urls), domain)
+})
+}*/
