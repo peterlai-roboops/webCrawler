@@ -17,14 +17,11 @@ object siteMapGenerator {
         domain = args(0).split("//")(1).split("/")(0),
         siteVisited = mutable.HashMap.empty
       )
-//      println("length = " + websites.size)
-
-//      val websites: Stream[String] = organiser(formatUrl(args(0)), domain)
 //      websites.foreach(s => if (s.internal) println(s"internal site found ${s.url}") else println(s"external site found ${s.url}"))
     }
   }
 
-  def organiser(url: String, domain: String, siteVisited: mutable.HashMap[String, Website]) : Unit = {
+  def organiser(url: String, domain: String, siteVisited: mutable.HashMap[String, Website]) :  mutable.HashMap[String, Website] = {
     if(!siteVisited.contains(url)) {
       val site: Website = {
         if (url.contains(domain)) {
@@ -40,16 +37,17 @@ object siteMapGenerator {
       if (site.isinternal && !siteVisited.contains(site.url)) { //Need this here as html might be empty, and thus a guard on the for will be too late as findLink2(site.hTML.get)
         println("internal site found " + url)
         for {
-          nextUrl <- findLink2(site.hTML.get)
+          nextUrl <- findLink(site.hTML.get)
         } organiser(formatUrl(nextUrl), domain, siteVisited += site.url -> site)
       }
     }
+    siteVisited
   }
 
-  def findLink2(html: String): List[String] = {
+  def findLink(html: String): List[String] = {
     "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
       println("images = " + urls.replace("<img src=\"", ""))
-    })
+    }) //TODO This regex still needs tidying, might even before using a xml paraser
     """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).toList
   }
 
@@ -73,14 +71,3 @@ object siteMapGenerator {
     }
   }
 }
-
-/*
-def findLink(websiteInstance: Website): Unit = {
-  "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
-  println("images = " + urls.replace("<img src=\"", ""))
-})
-
-  """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(websiteInstance.hTML.toString).foreach({ urls =>
-  organiser(formatUrl(urls), domain)
-})
-}*/
