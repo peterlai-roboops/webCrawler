@@ -1,54 +1,54 @@
 package websiteMapGenerator
 
-import scala.collection.mutable
 import scala.util.Try
-
 
 object siteMapGenerator {
 
   def main(args: Array[String]): Unit = {
     if (args.length == 0)
-      println("No arguments \n try siteMapGenerator http://www.programcreek.com/")
+      println("No arguments \n try siteMapGenerator http://www.allaboutscala.com/")
     else if (!args(0).isEmpty) {
       println("Generating Site map for " + args(0))
 
       val websites = organiser(
-        url = formatUrl(args(0)),
-        domain = args(0).split("//")(1).split("/")(0),
-        siteVisited = mutable.HashMap.empty
+        sitesToVisit = List(formatUrl(args(0))),
+        siteVisited = List.empty,
+        domain = args(0).split("//")(1).split("/")(0)
       )
 //      websites.foreach(s => if (s.internal) println(s"internal site found ${s.url}") else println(s"external site found ${s.url}"))
     }
   }
 
-  def organiser(url: String, domain: String, siteVisited: mutable.HashMap[String, Website]) :  mutable.HashMap[String, Website] = {
-    if(!siteVisited.contains(url)) {
-      val site: Website = {
-        if (url.contains(domain)) {
-          val html = downloadHtml(url)
-          Website(url, Some(html), isinternal = true, visited = true)
-        }
-        else {
-          println("external site found " + url)
-          Website(url, None, isinternal = false, visited = true)
-        }
+  def organiser(sitesToVisit: List[String], domain: String, siteVisited: List[String]):  List[String] = {
+    if(!sitesToVisit.isEmpty) {
+      val listOfFoundLinks = if (!siteVisited.contains(sitesToVisit.head) && sitesToVisit.head.contains(domain)) {
+        println("Found Internal site " + sitesToVisit.head)
+        findLink(downloadHtml(sitesToVisit.head))
+      }
+      else if (!siteVisited.contains(sitesToVisit.head) && !sitesToVisit.head.contains(domain)) {
+        println("Found external site " + sitesToVisit.head)
+        Nil
+      } else {
+        Nil
       }
 
-      if (site.isinternal && !siteVisited.contains(site.url)) { //Need this here as html might be empty, and thus a guard on the for will be too late as findLink2(site.hTML.get)
-        println("internal site found " + url)
-        for {
-          nextUrl <- findLink(site.hTML.get)
-        } organiser(formatUrl(nextUrl), domain, siteVisited += site.url -> site)
-      }
+      val newVisitedSites = sitesToVisit.head :: siteVisited
+      val newSitesToVisit = sitesToVisit.drop(1) ++ listOfFoundLinks //Filter if they're already in the sitevisted?
+      organiser(newSitesToVisit, domain, newVisitedSites)
     }
+    /*
+    TODO siteVisited doesn't contain whether its internal or not, might worth have a hashmap of sitevisted
+    and internal|external I've left this as is because the various println shows whether its
+    internal or external and it's good practice to return something in a functional program
+     */
     siteVisited
   }
 
   def findLink(html: String): List[String] = {
     "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
       println("images = " + urls.replace("<img src=\"", ""))
-    }) //TODO This regex still needs tidying, might even before using a xml paraser
-    """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).toList
+    }) //TODO This regex still needs tidying, I should use a xml paraser, but i just don't want to add a external dependency to this simple program
+    """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).map(formatUrl).filter(!_.isEmpty).toList
   }
 
   def formatUrl = replaceHrefinString _ andThen replaceIfendsWithSlash
