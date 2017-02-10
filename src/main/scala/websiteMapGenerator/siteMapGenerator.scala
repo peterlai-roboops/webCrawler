@@ -45,7 +45,7 @@ object siteMapGenerator {
   }
 
   def findLink(html: String): List[String] = {
-    "<img\\s+[^>]*src=\"([^\"]*)=[^>]*>".r.findAllIn(html.toString).foreach({ urls =>
+    "<img\\s[^>]*?src\\s*=\\s*['\"]([^'\"]*?)['\"][^>]*?>".r.findAllIn(html.toString).foreach({ urls =>
       println("images = " + urls.replace("<img src=\"", ""))
     }) //TODO This regex still needs tidying, I should use a xml paraser, but i just don't want to add a external dependency to this simple program
     """href="([a-zA-Z0-9:/\.]*)?"""".r.findAllIn(html.toString).map(formatUrl).filter(!_.isEmpty).toList
